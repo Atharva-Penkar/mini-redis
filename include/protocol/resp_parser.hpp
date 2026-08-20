@@ -72,7 +72,7 @@ public:
     void reset();
 
 private:
-    size_t pos = 0;
+    size_t position = 0;
     /* parsers */
     std::optional<RespObject> parse_simple_string(const std::string &buffer);
     std::optional<RespObject> parse_error(const std::string &buffer);
