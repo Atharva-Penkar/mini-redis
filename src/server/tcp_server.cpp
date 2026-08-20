@@ -28,7 +28,7 @@ TCPServer::TCPServer(uint16_t port) : port(port) {
     if (listen(server_file_descriptor, SOMAXCONN) == -1)
         throw std::runtime_error("Failed to listen on socket");
 
-    epoll_file_descriptor = epoll_create1(1);
+    epoll_file_descriptor = epoll_create1(0);
     if (epoll_file_descriptor == -1)
         throw std::runtime_error("Failed to create epoll instance");
 
