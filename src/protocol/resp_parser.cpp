@@ -45,3 +45,31 @@ std::optional<RespObject> RespParser::parse_error(const std::string &buffer) {
         return std::nullopt;
     return RespObject{RespType::ERROR, *result};
 }
+std::optional<RespObject> RespParser::parse_integer(const std::string &buffer) {
+    auto result = read_until_crlf(buffer);
+    if(!result)
+        return std::nullopt;
+    int64_t value;
+    auto [ptr, ec] = std::from_chars(result->data(), result->data() + result->size(), value);
+    if(ec != std::errc())
+        return std::nullopt;
+    return RespObject{RespType::INTEGER, value};
+}
+
+std::optional<RespObject> RespParser::parse_bulk_string(const std::string &buffer) {
+    auto raw = read_until_crlf(buffer);
+    if(!raw)
+        return std::nullopt;
+    int64_t length;
+    auto [ptr, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), length);
+    if(ec != std::errc())
+        return std::nullopt;
+    if(length == -1)
+        return RespObject{RespType::NULL_BULK_STRING, ""};
+    if(position + length + 2 > buffer.length())
+        return std::nullopt;
+    std::string result = buffer.substr(position, length);
+    position += length + 2;
+    return RespObject{RespType::BULK_STRING, result};
+}
+
