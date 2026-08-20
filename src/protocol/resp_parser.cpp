@@ -73,3 +73,23 @@ std::optional<RespObject> RespParser::parse_bulk_string(const std::string &buffe
     return RespObject{RespType::BULK_STRING, result};
 }
 
+std::optional<RespObject> RespParser::parse_array(const std::string &buffer) {
+    auto raw = read_until_crlf(buffer);
+    if(!raw)
+        return std::nullopt;
+    int64_t length;
+    auto [ptr, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), length);
+    if(ec != std::errc())
+        return std::nullopt;
+    if(length == -1)
+        return RespObject{RespType::ARRAY, std::vector<RespObject>{}};
+    std::vector<RespObject> array;
+    array.reserve(length);
+    for(int64_t i = 0; i < length; i++){
+        auto element = parse(buffer);
+        if(!element)
+            return std::nullopt;
+        array.push_back(*element);
+    }
+    return RespObject{RespType::ARRAY, array};
+}
