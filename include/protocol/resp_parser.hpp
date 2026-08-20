@@ -1,20 +1,13 @@
 #ifndef RESP_PARSER_HPP
 #define RESP_PARSER_HPP
 
-#include <string>
-#include <vector>
-#include <variant>
-#include <optional>
 #include <cstdint>
+#include <optional>
+#include <string>
+#include <variant>
+#include <vector>
 
-enum class RespType {
-    SIMPLE_STRING,
-    ERROR,
-    INTEGER,
-    BULK_STRING,
-    ARRAY,
-    NULL_BULK_STRING
-};
+enum class RespType { SIMPLE_STRING, ERROR, INTEGER, BULK_STRING, ARRAY, NULL_BULK_STRING };
 
 enum class StorageDataType {
     STRING,
@@ -66,12 +59,12 @@ struct RespObject {
 };
 
 class RespParser {
-public:
+  public:
     std::optional<RespObject> parse(const std::string &buffer);
     size_t get_bytes_consumed() const;
     void reset();
 
-private:
+  private:
     size_t position = 0;
     /* parsers */
     std::optional<RespObject> parse_simple_string(const std::string &buffer);

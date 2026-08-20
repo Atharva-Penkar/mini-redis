@@ -1,17 +1,13 @@
-#include "include/protocol/resp_parser.hpp"
+#include "../../include/protocol/resp_parser.hpp"
 #include <charconv>
 
-size_t RespParser::get_bytes_consumed() const {
-    return position;
-}
+size_t RespParser::get_bytes_consumed() const { return position; }
 
-void RespParser::reset() {
-    position = 0;
-}
+void RespParser::reset() { position = 0; }
 
 std::optional<std::string> RespParser::read_until_crlf(const std::string &buffer) {
     size_t crlf_position = buffer.find("\r\n", position);
-    if(crlf_position == std::string::npos)
+    if (crlf_position == std::string::npos)
         return std::nullopt;
     std::string result = buffer.substr(position, crlf_position - position);
     position = crlf_position + 2;
@@ -19,54 +15,73 @@ std::optional<std::string> RespParser::read_until_crlf(const std::string &buffer
 }
 
 std::optional<RespObject> RespParser::parse(const std::string &buffer) {
-    if(position >= buffer.length())
+    size_t start = position;
+    if (position >= buffer.length())
         return std::nullopt;
     char type_char = buffer[position++];
-    switch(type_char){
-        case '+': return parse_simple_string(buffer);
-        case '-': return parse_error(buffer);
-        case ':': return parse_integer(buffer);
-        case '$': return parse_bulk_string(buffer);
-        case '*': return parse_array(buffer);
-        default: return std::nullopt;
+    std::optional<RespObject> result;
+    switch (type_char) {
+    case '+':
+        result = parse_simple_string(buffer);
+        break;
+    case '-':
+        result = parse_error(buffer);
+        break;
+    case ':':
+        result = parse_integer(buffer);
+        break;
+    case '$':
+        result = parse_bulk_string(buffer);
+        break;
+    case '*':
+        result = parse_array(buffer);
+        break;
+    default:
+        result = std::nullopt;
+        break;
     }
+    if (!result) {
+        position = start;
+        return std::nullopt;
+    }
+    return result;
 }
 
 std::optional<RespObject> RespParser::parse_simple_string(const std::string &buffer) {
     auto result = read_until_crlf(buffer);
-    if(!result)
+    if (!result)
         return std::nullopt;
     return RespObject{RespType::SIMPLE_STRING, *result};
 }
 
 std::optional<RespObject> RespParser::parse_error(const std::string &buffer) {
     auto result = read_until_crlf(buffer);
-    if(!result)
+    if (!result)
         return std::nullopt;
     return RespObject{RespType::ERROR, *result};
 }
 std::optional<RespObject> RespParser::parse_integer(const std::string &buffer) {
     auto result = read_until_crlf(buffer);
-    if(!result)
+    if (!result)
         return std::nullopt;
     int64_t value;
     auto [ptr, ec] = std::from_chars(result->data(), result->data() + result->size(), value);
-    if(ec != std::errc())
+    if (ec != std::errc())
         return std::nullopt;
     return RespObject{RespType::INTEGER, value};
 }
 
 std::optional<RespObject> RespParser::parse_bulk_string(const std::string &buffer) {
     auto raw = read_until_crlf(buffer);
-    if(!raw)
+    if (!raw)
         return std::nullopt;
     int64_t length;
     auto [ptr, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), length);
-    if(ec != std::errc())
+    if (ec != std::errc())
         return std::nullopt;
-    if(length == -1)
+    if (length == -1)
         return RespObject{RespType::NULL_BULK_STRING, ""};
-    if(position + length + 2 > buffer.length())
+    if (position + length + 2 > buffer.length())
         return std::nullopt;
     std::string result = buffer.substr(position, length);
     position += length + 2;
@@ -75,19 +90,19 @@ std::optional<RespObject> RespParser::parse_bulk_string(const std::string &buffe
 
 std::optional<RespObject> RespParser::parse_array(const std::string &buffer) {
     auto raw = read_until_crlf(buffer);
-    if(!raw)
+    if (!raw)
         return std::nullopt;
     int64_t length;
     auto [ptr, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), length);
-    if(ec != std::errc())
+    if (ec != std::errc())
         return std::nullopt;
-    if(length == -1)
+    if (length == -1)
         return RespObject{RespType::ARRAY, std::vector<RespObject>{}};
     std::vector<RespObject> array;
     array.reserve(length);
-    for(int64_t i = 0; i < length; i++){
+    for (int64_t i = 0; i < length; i++) {
         auto element = parse(buffer);
-        if(!element)
+        if (!element)
             return std::nullopt;
         array.push_back(*element);
     }
