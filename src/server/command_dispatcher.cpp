@@ -25,6 +25,10 @@ std::string CommandDispatcher::execute(const RespObject &request) {
         return RespSerializer::serialize(handle_del(args));
     if (command == "EXISTS")
         return RespSerializer::serialize(handle_exists(args));
+    if (command == "INCR")
+        return RespSerializer::serialize(handle_incr(args));
+    if (command == "DECR")
+        return RespSerializer::serialize(handle_decr(args));
     return RespSerializer::serialize({RespType::ERROR, std::string("ERR unknown command type")});
 }
 
@@ -74,3 +78,4 @@ RespObject CommandDispatcher::handle_exists(const std::vector<RespObject> &args)
     }
     return {RespType::INTEGER, count};
 }
+

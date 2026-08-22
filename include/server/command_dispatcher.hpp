@@ -18,6 +18,9 @@ class CommandDispatcher {
     RespObject handle_set(const std::vector<RespObject> &args);
     RespObject handle_del(const std::vector<RespObject> &args);
     RespObject handle_exists(const std::vector<RespObject> &args);
+    RespObject handle_incr(const std::vector<RespObject> &args);
+    RespObject handle_decr(const std::vector<RespObject> &args);
+    RespObject process_incr_decr(const std::vector<RespObject> &args, int64_t delta);
 };
 
 #endif
