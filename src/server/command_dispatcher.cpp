@@ -23,16 +23,22 @@ std::string CommandDispatcher::execute(const RespObject &request) {
         return RespSerializer::serialize(handle_set(args));
     if (command == "DEL")
         return RespSerializer::serialize(handle_del(args));
+    if (command == "EXISTS")
+        return RespSerializer::serialize(handle_exists(args));
     return RespSerializer::serialize({RespType::ERROR, std::string("ERR unknown command type")});
 }
 
 RespObject CommandDispatcher::handle_get(const std::vector<RespObject> &args) {
     if (args.size() != 2)
         return {RespType::ERROR, std::string("ERR wrong number of arguments for GET command")};
-    std::string key = std::get<std::string>(args[1].value);
+    if (args[1].type != RespType::BULK_STRING)
+        return {RespType::ERROR, std::string("ERR key must be a bulk string")};
+    const std::string &key = std::get<std::string>(args[1].value);
     StorageObject *object = db.get(key);
-    if (!object || object->type != StorageDataType::STRING)
+    if (!object)
         return {RespType::NULL_BULK_STRING, std::string("")};
+    if (object->type != StorageDataType::STRING)
+        return {RespType::BULK_STRING, std::string("WRONGTYPE Operation against a key holding a wrong kind of value")};
     return {RespType::BULK_STRING, std::get<std::string>(object->value)};
 }
 
@@ -52,6 +58,18 @@ RespObject CommandDispatcher::handle_del(const std::vector<RespObject> &args) {
     for (size_t i = 1; i < args.size(); i++) {
         std::string key = std::get<std::string>(args[i].value);
         if (db.del(key))
+            count++;
+    }
+    return {RespType::INTEGER, count};
+}
+
+RespObject CommandDispatcher::handle_exists(const std::vector<RespObject> &args) {
+    if(args.size() < 2)
+        return {RespType::ERROR, std::string("ERR wrong number of arguments for EXISTS command")};
+    int64_t count = 0;
+    for(size_t i = 1; i < args.size(); i++) {
+        std::string key = std::get<std::string>(args[i].value);
+        if(db.get(key) != nullptr)
             count++;
     }
     return {RespType::INTEGER, count};

@@ -1,5 +1,5 @@
 #ifndef COMMAND_DISPATCHER_HPP
-#define COMAND_DISPATCHER_HPP
+#define COMMAND_DISPATCHER_HPP
 
 #include "../../include/protocol/resp_parser.hpp"
 #include "../../include/storage/dict.hpp"
@@ -17,6 +17,7 @@ class CommandDispatcher {
     RespObject handle_get(const std::vector<RespObject> &args);
     RespObject handle_set(const std::vector<RespObject> &args);
     RespObject handle_del(const std::vector<RespObject> &args);
+    RespObject handle_exists(const std::vector<RespObject> &args);
 };
 
 #endif
